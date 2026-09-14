@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Overload — Workout Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff7a1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Overload">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -744,12 +752,13 @@ const DEFAULTS = {
   settings: ()=>({theme:'dark'}), account: ()=>null
 };
 
+const LS_PREFIX = 'overload:';
 async function loadState(){
   const keys = ['exercises','templates','history','activeWorkout','bodyweight','measurementFields','measurements','goals','dailyLogs','settings','account'];
   for(const k of keys){
     try{
-      const res = window.storage ? await window.storage.get(k, false) : null;
-      state[k] = res && res.value ? JSON.parse(res.value) : DEFAULTS[k]();
+      const raw = localStorage.getItem(LS_PREFIX+k);
+      state[k] = raw ? JSON.parse(raw) : DEFAULTS[k]();
     }catch(e){
       state[k] = DEFAULTS[k]();
     }
@@ -780,16 +789,14 @@ function migrateBodyweight(){
 
 async function saveKey(key){
   try{
-    if(!window.storage) return;
-    const res = await window.storage.set(key, JSON.stringify(state[key]), false);
-    if(!res) console.error('Save failed for', key);
+    localStorage.setItem(LS_PREFIX+key, JSON.stringify(state[key]));
   }catch(e){
     console.error('Storage error saving', key, e);
     showToast('Could not save — changes may be lost');
   }
 }
 async function deleteKeySafe(key){
-  try{ if(window.storage) await window.storage.delete(key, false); }catch(e){ /* ignore missing key */ }
+  try{ localStorage.removeItem(LS_PREFIX+key); }catch(e){ /* ignore missing key */ }
 }
 
 let saveTimers = {};
@@ -2717,6 +2724,15 @@ async function init(){
   render();
 }
 init();
+
+// Register the service worker for offline support / installability.
+// Guarded so it's a silent no-op anywhere this API isn't available
+// (e.g. Claude's artifact viewer, or file:// during local testing).
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{ /* not hosted yet / not supported here */ });
+  });
+}
 
 })();
 </script>
