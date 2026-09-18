@@ -1,0 +1,16 @@
+{
+  "appId": "com.overload.app",
+  "appName": "Overload",
+  "webDir": "docs",
+  "backgroundColor": "#171713",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#171713"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#171713"
+  }
+}
